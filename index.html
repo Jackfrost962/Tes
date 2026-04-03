@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+ 
+    .pom-wrap {
+      padding: 2rem 1.5rem;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+ 
+    h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.3px;
+    }
+ 
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+ 
+    .mode-btn {
+      padding: 6px 16px;
+      border-radius: 8px;
+      border: 0.5px solid #ccc;
+      background: transparent;
+      color: #888;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+ 
+    .mode-btn.active {
+      background: #ebebeb;
+      color: #1a1a1a;
+      border-color: #aaa;
+      font-weight: 500;
+    }
+ 
+    .timer-ring {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 1.5rem;
+    }
+ 
+    .timer-ring svg { transform: rotate(-90deg); }
+ 
+    .ring-bg {
+      fill: none;
+      stroke: #e0e0e0;
+      stroke-width: 8;
+    }
+ 
+    .ring-progress {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+ 
+    .timer-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+ 
+    .timer-display {
+      font-size: 42px;
+      font-weight: 500;
+      color: #1a1a1a;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+ 
+    .timer-label {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+ 
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+ 
+    .ctrl-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 0.5px solid #ccc;
+      background: transparent;
+      color: #888;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+ 
+    .ctrl-btn:hover {
+      background: #ebebeb;
+      color: #1a1a1a;
+    }
+ 
+    .play-btn {
+      width: 56px;
+      height: 56px;
+      font-size: 20px;
+      border-color: #aaa;
+      color: #1a1a1a;
+    }
+ 
+    .sessions {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+ 
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ddd;
+      transition: background 0.3s;
+    }
+ 
+    .dot.done { background: #1a1a1a; }
+ 
+    .settings-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+    }
+ 
+    .setting {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+ 
+    .setting label {
+      font-size: 11px;
+      color: #888;
+    }
+ 
+    .setting-val {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+ 
+    .setting-ctrl {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+ 
+    .adj-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      border: 0.5px solid #ccc;
+      background: transparent;
+      color: #888;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+    }
+ 
+    .adj-btn:hover { background: #ebebeb; }
+ 
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a1a; color: #f0f0f0; }
+      h1 { color: #f0f0f0; }
+      .mode-btn { border-color: #444; color: #888; }
+      .mode-btn.active { background: #2a2a2a; color: #f0f0f0; border-color: #666; }
+      .ring-bg { stroke: #333; }
+      .timer-display { color: #f0f0f0; }
+      .ctrl-btn { border-color: #444; color: #888; }
+      .ctrl-btn:hover { background: #2a2a2a; color: #f0f0f0; }
+      .play-btn { border-color: #666; color: #f0f0f0; }
+      .dot { background: #333; }
+      .dot.done { background: #f0f0f0; }
+      .setting label { color: #888; }
+      .setting-val { color: #f0f0f0; }
+      .adj-btn { border-color: #444; color: #888; }
+      .adj-btn:hover { background: #2a2a2a; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pom-wrap">
+    <h1>Pomodoro timer</h1>
+ 
+    <div class="mode-tabs">
+      <button class="mode-btn active" onclick="setMode('pomodoro')">Pomodoro</button>
+      <button class="mode-btn" onclick="setMode('short')">Short break</button>
+      <button class="mode-btn" onclick="setMode('long')">Long break</button>
+    </div>
+ 
+    <div class="timer-ring">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="96"/>
+        <circle class="ring-progress" id="ring" cx="110" cy="110" r="96"
+          stroke-dasharray="603" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-center">
+        <div class="timer-display" id="display">25:00</div>
+        <div class="timer-label" id="mode-label">Focus time</div>
+      </div>
+    </div>
+ 
+    <div class="controls">
+      <button class="ctrl-btn" onclick="resetTimer()" title="Reset">&#9632;</button>
+      <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()">&#9654;</button>
+      <button class="ctrl-btn" onclick="skipSession()" title="Skip">&#9654;&#9654;</button>
+    </div>
+ 
+    <div class="sessions" id="dots"></div>
+ 
+    <div class="settings-row">
+      <div class="setting">
+        <label>Focus</label>
+        <div class="setting-ctrl">
+          <button class="adj-btn" onclick="adjustTime('pomodoro', -1)">−</button>
+          <span class="setting-val" id="val-pomodoro">25</span>
+          <button class="adj-btn" onclick="adjustTime('pomodoro', 1)">+</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label>Short break</label>
+        <div class="setting-ctrl">
+          <button class="adj-btn" onclick="adjustTime('short', -1)">−</button>
+          <span class="setting-val" id="val-short">5</span>
+          <button class="adj-btn" onclick="adjustTime('short', 1)">+</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label>Long break</label>
+        <div class="setting-ctrl">
+          <button class="adj-btn" onclick="adjustTime('long', -1)">−</button>
+          <span class="setting-val" id="val-long">15</span>
+          <button class="adj-btn" onclick="adjustTime('long', 1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <script>
+    const CIRCUMFERENCE = 603;
+    const modes = { pomodoro: 25, short: 5, long: 15 };
+    const labels = { pomodoro: 'Focus time', short: 'Short break', long: 'Long break' };
+    const ringColors = { pomodoro: '#D85A30', short: '#1D9E75', long: '#378ADD' };
+ 
+    let currentMode = 'pomodoro';
+    let totalSeconds = 25 * 60;
+    let remaining = totalSeconds;
+    let running = false;
+    let interval = null;
+    let sessionsCompleted = 0;
+    const totalSessions = 4;
+ 
+    function renderDots() {
+      const c = document.getElementById('dots');
+      c.innerHTML = '';
+      for (let i = 0; i < totalSessions; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i < sessionsCompleted ? ' done' : '');
+        c.appendChild(d);
+      }
+    }
+ 
+    function updateDisplay() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      document.getElementById('display').textContent =
+        String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      document.title = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + ' — Pomodoro';
+      const progress = remaining / totalSeconds;
+      const offset = CIRCUMFERENCE * (1 - progress);
+      const ring = document.getElementById('ring');
+      ring.style.strokeDashoffset = offset;
+      ring.style.stroke = ringColors[currentMode];
+    }
+ 
+    function setMode(mode) {
+      clearInterval(interval);
+      running = false;
+      document.getElementById('play-btn').innerHTML = '&#9654;';
+      currentMode = mode;
+      totalSeconds = modes[mode] * 60;
+      remaining = totalSeconds;
+      document.querySelectorAll('.mode-btn').forEach((b, i) => {
+        b.classList.toggle('active', ['pomodoro', 'short', 'long'][i] === mode);
+      });
+      document.getElementById('mode-label').textContent = labels[mode];
+      updateDisplay();
+    }
+ 
+    function togglePlay() {
+      if (running) {
+        clearInterval(interval);
+        running = false;
+        document.getElementById('play-btn').innerHTML = '&#9654;';
+      } else {
+        running = true;
+        document.getElementById('play-btn').innerHTML = '&#9646;&#9646;';
+        interval = setInterval(() => {
+          remaining--;
+          updateDisplay();
+          if (remaining <= 0) {
+            clearInterval(interval);
+            running = false;
+            document.getElementById('play-btn').innerHTML = '&#9654;';
+            if (currentMode === 'pomodoro') {
+              sessionsCompleted = Math.min(sessionsCompleted + 1, totalSessions);
+              if (sessionsCompleted >= totalSessions) sessionsCompleted = 0;
+              renderDots();
+            }
+            // Browser notification
+            if (Notification.permission === 'granted') {
+              new Notification('Pomodoro', {
+                body: currentMode === 'pomodoro' ? 'Time for a break!' : 'Back to focus!',
+              });
+            }
+          }
+        }, 1000);
+      }
+    }
+ 
+    function resetTimer() {
+      clearInterval(interval);
+      running = false;
+      document.getElementById('play-btn').innerHTML = '&#9654;';
+      remaining = totalSeconds;
+      updateDisplay();
+    }
+ 
+    function skipSession() {
+      clearInterval(interval);
+      running = false;
+      document.getElementById('play-btn').innerHTML = '&#9654;';
+      if (currentMode === 'pomodoro') {
+        sessionsCompleted = Math.min(sessionsCompleted + 1, totalSessions);
+        if (sessionsCompleted >= totalSessions) sessionsCompleted = 0;
+        renderDots();
+        setMode(sessionsCompleted % 4 === 0 ? 'long' : 'short');
+      } else {
+        setMode('pomodoro');
+      }
+    }
+ 
+    function adjustTime(mode, delta) {
+      modes[mode] = Math.max(1, Math.min(60, modes[mode] + delta));
+      document.getElementById('val-' + mode).textContent = modes[mode];
+      if (mode === currentMode) {
+        totalSeconds = modes[mode] * 60;
+        remaining = totalSeconds;
+        updateDisplay();
+      }
+    }
+ 
+    // Request notification permission on load
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+ 
+    renderDots();
+    updateDisplay();
+  </script>
+</body>
+</html>
