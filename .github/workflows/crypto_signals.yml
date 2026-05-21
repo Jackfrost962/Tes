@@ -1,0 +1,78 @@
+name: Crypto Signal Scanner
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'      # Runs every 3 hours
+  workflow_dispatch:            # Allows manual run from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: 🔍 Run crypto scanner
+        run: python crypto_scanner.py
+      
+      - name: 📤 Read signal output
+        id: signal
+        run: |
+          if [ -f signal_output.txt ] && grep -q "Ticker:" signal_output.txt; then
+            TICKER=$(grep "Ticker:" signal_output.txt | cut -d' ' -f2)
+            PRICE=$(grep "Price:" signal_output.txt | cut -d' ' -f2)
+            SIGNAL=$(grep "Signal:" signal_output.txt | cut -d' ' -f2)
+            TURNOVER=$(grep "Turnover:" signal_output.txt | cut -d' ' -f2)
+            
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "ticker=$TICKER" >> $GITHUB_OUTPUT
+            echo "price=$PRICE" >> $GITHUB_OUTPUT
+            echo "signal=$SIGNAL" >> $GITHUB_OUTPUT
+            echo "turnover=$TURNOVER" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 📱 Send Telegram Alert
+        if: steps.signal.outputs.found == 'true'
+        uses: cbrgm/telegram-github-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          message: |
+            🚨 *CRYPTO SIGNAL ALERT* 🚨
+            
+            ━━━━━━━━━━━━━━━━━━━━
+            📊 *Ticker:* ${{ steps.signal.outputs.ticker }}
+            💰 *Price:* $${{ steps.signal.outputs.price }}
+            🔔 *Signal:* 🔴 *${{ steps.signal.outputs.signal }}* 🔴
+            📈 *Turnover:* ${{ steps.signal.outputs.turnover }}x
+            ━━━━━━━━━━━━━━━━━━━━
+            
+            ⏰ Time: ${{ github.event.repository.updated_at }}
+            
+            🔍 Check your trading platform now!
+      
+      - name: 📝 Save signal log
+        if: steps.signal.outputs.found == 'true'
+        run: |
+          echo "$(date): ${{ steps.signal.outputs.ticker }} - ${{ steps.signal.outputs.signal }} @ $${{ steps.signal.outputs.price }}" >> signal_history.log
+      
+      - name: 💾 Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-signals
+          path: |
+            signal_output.txt
+            signal_output.json
+            signal_history.log
+          retention-days: 7
