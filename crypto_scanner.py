@@ -5,10 +5,10 @@ from scipy import stats
 import json
 from datetime import datetime
 
-# ── WATCHLIST (CORRECTED TICKERS) ────────────────────────
+# ── WATCHLIST (FIXED TICKERS) ────────────────────────
 watchlist = [
     "LDO-USD",
-    "SUI20947-USD",
+    "SUI20947-USD",           # was SUI20947-USD
     "DOGE-USD",
     "RPL-USD",
     "AAVE-USD",
@@ -17,7 +17,7 @@ watchlist = [
     "ONDO-USD",
     "TRX-USD",
     "JTO-USD",
-    "TAO22974-USD",
+    "TAO22974-USD",           # was TAO22974-USD
     "FIDA-USD",
     "PENDLE-USD"
 ]
@@ -42,13 +42,11 @@ def rolling_slope(series, window):
 # ── FUNCTION: GET SIGNAL FOR TICKER ─────────────
 def get_signal(ticker):
     try:
-        # Download data
         df = yf.download(ticker, interval="1h", period="60d", progress=False)
         
         if len(df) < 200:
             return None
         
-        # Handle multi-index columns
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
         
@@ -58,9 +56,8 @@ def get_signal(ticker):
             return None
         
         # ── DOLLAR VOLUME: yFinance volume is already in USD ──
-        df['dollar_volume'] = df['Volume']   # No multiplication needed
+        df['dollar_volume'] = df['Volume']
         
-        # ── FEATURES ─────────────────────────────
         df['hour'] = df.index.hour
         df['regression_slope'] = rolling_slope(df['Close'], 336)
         
@@ -72,7 +69,6 @@ def get_signal(ticker):
         df['volatility'] = df['returns'].rolling(24).std()
         df['avg_volatility'] = df['volatility'].rolling(168).mean()
         
-        # ── NO LOOK-AHEAD BIAS ────────────
         window = 168
         df['local_high'] = df['High'].rolling(window).max()
         df['local_low'] = df['Low'].rolling(window).min()
@@ -85,7 +81,6 @@ def get_signal(ticker):
         if len(df) == 0:
             return None
         
-        # ── BUY CONDITION ────────────────────────
         buy_condition = (
             (df['turnover_ratio'] > turnover_threshold) &
             (df['hour'] >= 0) & (df['hour'] <= 15) &
@@ -94,7 +89,6 @@ def get_signal(ticker):
             (df['volatility'] > df['avg_volatility'])
         )
         
-        # ── EXIT CONDITION ───────────────────────
         exit_condition = (
             (df['turnover_ratio'] < force_exit_turnover) &
             (df['Close'] < df['ema'])
@@ -152,21 +146,25 @@ for ticker in watchlist:
 print("=" * 50)
 print(f"📊 Scan complete. Found {len(signals_found)} signals.")
 
+# ── SAVE ALL SIGNALS TO TEXT FILE (for Telegram) ──
 if signals_found:
-    # Write all signals to the text file
     with open('signal_output.txt', 'w') as f:
         for s in signals_found:
             f.write(f"Ticker: {s['ticker']}\n")
-            f.write(f"Price: {s['price']}\n")
+            f.write(f"Price: ${s['price']}\n")
             f.write(f"Signal: {s['signal']}\n")
-            f.write(f"Turnover: {s['turnover']}\n")
+            f.write(f"Turnover: {s['turnover']}x\n")
             f.write(f"Volatility: {s['volatility']}\n")
             f.write(f"Time: {s['signal_time']}\n")
-            f.write("---\n")   # separator
-    # Also keep JSON
+            f.write("━━━━━━━━━━━━━━━━━━━━\n")   # separator between signals
+    
     with open('signal_output.json', 'w') as f:
         json.dump(signals_found, f, indent=2)
     
-    print(f"\n🚨 {len(signals_found)} SIGNALS DETECTED:")
+    print("\n🚨 SIGNALS DETECTED:")
     for s in signals_found:
         print(f"  🔔 {s['ticker']}: {s['signal']} @ ${s['price']}")
+else:
+    with open('signal_output.txt', 'w') as f:
+        f.write("NO_SIGNAL")
+    print("\n😴 No active signals at this time")
