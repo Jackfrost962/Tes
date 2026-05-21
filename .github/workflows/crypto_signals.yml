@@ -2,7 +2,7 @@ name: Crypto Signal Scanner
 
 on:
   schedule:
-    - cron: '0 */3 * * *'      # Runs every 3 hours
+    - cron: '0 */1 * * *'      # Runs every hour
   workflow_dispatch:            # Allows manual run from GitHub UI
 
 jobs:
