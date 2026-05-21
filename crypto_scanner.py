@@ -5,7 +5,7 @@ from scipy import stats
 import json
 from datetime import datetime
 
-# ── WATCHLIST (FIXED) ────────────────────────────────────
+# ── WATCHLIST (CORRECTED TICKERS) ────────────────────────
 watchlist = [
     "LDO-USD",
     "SUI20947-USD",
@@ -17,7 +17,7 @@ watchlist = [
     "ONDO-USD",
     "TRX-USD",
     "JTO-USD",
-    "TAO22974-USD",           # Fixed from TAO22974-USD
+    "TAO22974-USD",
     "FIDA-USD",
     "PENDLE-USD"
 ]
@@ -45,7 +45,7 @@ def get_signal(ticker):
         # Download data
         df = yf.download(ticker, interval="1h", period="60d", progress=False)
         
-        if len(df) < 200:  # Need minimum data
+        if len(df) < 200:
             return None
         
         # Handle multi-index columns
@@ -54,11 +54,11 @@ def get_signal(ticker):
         
         df = df.dropna()
         
-        if len(df) < 336:  # Need enough for 14-day slope
+        if len(df) < 336:
             return None
         
-        # ── FIXED: DOLLAR VOLUME (Volume * Price) ──
-        df['dollar_volume'] = df['Volume'] * df['Close']
+        # ── DOLLAR VOLUME: yFinance volume is already in USD ──
+        df['dollar_volume'] = df['Volume']   # No multiplication needed
         
         # ── FEATURES ─────────────────────────────
         df['hour'] = df.index.hour
@@ -72,7 +72,7 @@ def get_signal(ticker):
         df['volatility'] = df['returns'].rolling(24).std()
         df['avg_volatility'] = df['volatility'].rolling(168).mean()
         
-        # ── FIXED: NO LOOK-AHEAD BIAS ────────────
+        # ── NO LOOK-AHEAD BIAS ────────────
         window = 168
         df['local_high'] = df['High'].rolling(window).max()
         df['local_low'] = df['Low'].rolling(window).min()
@@ -80,7 +80,6 @@ def get_signal(ticker):
         df['lower_low'] = df['local_low'] < df['local_low'].shift(window)
         df['bearish'] = df['lower_high'] & df['lower_low']
         
-        # Drop NaN rows from rolling calculations
         df = df.dropna()
         
         if len(df) == 0:
@@ -101,23 +100,19 @@ def get_signal(ticker):
             (df['Close'] < df['ema'])
         )
         
-        # Get most recent signals
         buy_signals = df[buy_condition].index
         exit_signals = df[exit_condition].index
         
         signal = "STAND STILL"
         signal_time = None
         
-        # Check for BUY first (most recent signal wins)
         if len(buy_signals) > 0:
             last_buy = buy_signals[-1]
             last_exit = exit_signals[-1] if len(exit_signals) > 0 else None
-            
             if last_exit is None or last_buy > last_exit:
                 signal = "BUY"
                 signal_time = last_buy
         
-        # If no BUY, check for EXIT
         if signal == "STAND STILL" and len(exit_signals) > 0:
             signal = "EXIT"
             signal_time = exit_signals[-1]
@@ -157,11 +152,8 @@ for ticker in watchlist:
 print("=" * 50)
 print(f"📊 Scan complete. Found {len(signals_found)} signals.")
 
-# ── SAVE OUTPUT FOR GITHUB ACTIONS ─────────────
 if signals_found:
-    # Save first signal for Telegram (take highest turnover or first)
     primary = signals_found[0]
-    
     with open('signal_output.txt', 'w') as f:
         f.write(f"Ticker: {primary['ticker']}\n")
         f.write(f"Price: {primary['price']}\n")
