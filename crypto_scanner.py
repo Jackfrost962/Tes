@@ -153,22 +153,20 @@ print("=" * 50)
 print(f"📊 Scan complete. Found {len(signals_found)} signals.")
 
 if signals_found:
-    primary = signals_found[0]
+    # Write all signals to the text file
     with open('signal_output.txt', 'w') as f:
-        f.write(f"Ticker: {primary['ticker']}\n")
-        f.write(f"Price: {primary['price']}\n")
-        f.write(f"Signal: {primary['signal']}\n")
-        f.write(f"Turnover: {primary['turnover']}\n")
-        f.write(f"Volatility: {primary['volatility']}\n")
-        f.write(f"Time: {primary['signal_time']}\n")
-    
+        for s in signals_found:
+            f.write(f"Ticker: {s['ticker']}\n")
+            f.write(f"Price: {s['price']}\n")
+            f.write(f"Signal: {s['signal']}\n")
+            f.write(f"Turnover: {s['turnover']}\n")
+            f.write(f"Volatility: {s['volatility']}\n")
+            f.write(f"Time: {s['signal_time']}\n")
+            f.write("---\n")   # separator
+    # Also keep JSON
     with open('signal_output.json', 'w') as f:
         json.dump(signals_found, f, indent=2)
     
-    print("\n🚨 SIGNALS DETECTED:")
+    print(f"\n🚨 {len(signals_found)} SIGNALS DETECTED:")
     for s in signals_found:
         print(f"  🔔 {s['ticker']}: {s['signal']} @ ${s['price']}")
-else:
-    with open('signal_output.txt', 'w') as f:
-        f.write("NO_SIGNAL")
-    print("\n😴 No active signals at this time")
