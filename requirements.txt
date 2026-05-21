@@ -1,0 +1,6 @@
+txt
+
+yfinance
+pandas
+numpy
+scipy
