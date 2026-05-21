@@ -16,7 +16,7 @@ watchlist = [
     "ONDO-USD",
     "TRX-USD",
     "JTO-USD",
-    "TAO-USD",           # Fixed from TAO22974-USD
+    "TAO22974-USD",           # Fixed from TAO22974-USD
     "FIDA-USD",
     "PENDLE-USD"
 ]
