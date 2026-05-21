@@ -8,6 +8,7 @@ from datetime import datetime
 # ── WATCHLIST (FIXED) ────────────────────────────────────
 watchlist = [
     "LDO-USD",
+    "SUI20947-USD",
     "DOGE-USD",
     "RPL-USD",
     "AAVE-USD",
@@ -42,7 +43,7 @@ def rolling_slope(series, window):
 def get_signal(ticker):
     try:
         # Download data
-        df = yf.download(ticker, interval="1h", period="90d", progress=False)
+        df = yf.download(ticker, interval="1h", period="60d", progress=False)
         
         if len(df) < 200:  # Need minimum data
             return None
