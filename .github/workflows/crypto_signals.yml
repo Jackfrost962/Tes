@@ -2,42 +2,40 @@ name: Crypto Signal Scanner
 
 on:
   schedule:
-    - cron: '0 */1 * * *'      # Runs every hour at minute 0
-  workflow_dispatch:            # Allows manual run from GitHub UI
+    - cron: '0 */1 * * *'
+  workflow_dispatch:
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: 📦 Install dependencies
         run: pip install -r requirements.txt
-      
+
       - name: 🔍 Run crypto scanner
         run: python crypto_scanner.py
-      
+
       - name: 📤 Read signal output
         id: signal
         run: |
           if [ -f signal_output.txt ] && ! grep -q "NO_SIGNAL" signal_output.txt; then
             echo "found=true" >> $GITHUB_OUTPUT
-            # Read entire file content and escape for JSON/Telegram
-            MESSAGE=$(cat signal_output.txt | sed 's/"/\\"/g')
-            # Keep only the last 4000 characters (Telegram limit)
-            MESSAGE="${MESSAGE: -4000}"
-            echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+            echo "message<<EOF" >> $GITHUB_OUTPUT
+            tail -c 4000 signal_output.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: 📱 Send Telegram Alert
         if: steps.signal.outputs.found == 'true'
         uses: cbrgm/telegram-github-action@v1
@@ -45,19 +43,12 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           message: |
-            🚨 *CRYPTO SIGNALS (LAST HOUR)* 🚨
+            🚨 CRYPTO SIGNALS (LAST HOUR) 🚨
             
             ${{ steps.signal.outputs.message }}
             
             🔍 Check your trading platform now!
-      
-      - name: 📝 Save signal log
-        if: steps.signal.outputs.found == 'true'
-        run: |
-          echo "$(date): Signals found" >> signal_history.log
-          cat signal_output.txt >> signal_history.log
-          echo "----------------------------------------" >> signal_history.log
-      
+
       - name: 💾 Upload results
         uses: actions/upload-artifact@v4
         with:
@@ -65,5 +56,4 @@ jobs:
           path: |
             signal_output.txt
             signal_output.json
-            signal_history.log
           retention-days: 7
