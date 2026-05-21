@@ -8,7 +8,7 @@ from datetime import datetime
 # ── WATCHLIST (FIXED TICKERS) ────────────────────────
 watchlist = [
     "LDO-USD",
-    "SUI20947-USD",           # was SUI20947-USD
+    "SUI20947-USD",
     "DOGE-USD",
     "RPL-USD",
     "AAVE-USD",
@@ -17,7 +17,7 @@ watchlist = [
     "ONDO-USD",
     "TRX-USD",
     "JTO-USD",
-    "TAO22974-USD",           # was TAO22974-USD
+    "TAO22974-USD",
     "FIDA-USD",
     "PENDLE-USD"
 ]
@@ -55,7 +55,7 @@ def get_signal(ticker):
         if len(df) < 336:
             return None
         
-        # ── DOLLAR VOLUME: yFinance volume is already in USD ──
+        # ── DOLLAR VOLUME ──
         df['dollar_volume'] = df['Volume']
         
         df['hour'] = df.index.hour
@@ -96,18 +96,17 @@ def get_signal(ticker):
         
         buy_signals = df[buy_condition].index
         exit_signals = df[exit_condition].index
-        
+
+        # ── ONLY CHECK LAST CANDLE ──
+        last_candle = df.index[-1]
+
         signal = "STAND STILL"
         signal_time = None
-        
-        if len(buy_signals) > 0:
-            last_buy = buy_signals[-1]
-            last_exit = exit_signals[-1] if len(exit_signals) > 0 else None
-            if last_exit is None or last_buy > last_exit:
-                signal = "BUY"
-                signal_time = last_buy
-        
-        if signal == "STAND STILL" and len(exit_signals) > 0:
+
+        if len(buy_signals) > 0 and buy_signals[-1] == last_candle:
+            signal = "BUY"
+            signal_time = buy_signals[-1]
+        elif len(exit_signals) > 0 and exit_signals[-1] == last_candle:
             signal = "EXIT"
             signal_time = exit_signals[-1]
         
@@ -115,10 +114,10 @@ def get_signal(ticker):
         
         return {
             "ticker": ticker,
-            "price": round(latest['Close'], 4),
-            "turnover": round(latest['turnover_ratio'], 2),
-            "slope": round(latest['regression_slope'], 6),
-            "volatility": round(latest['volatility'], 4),
+            "price": round(float(latest['Close']), 4),
+            "turnover": round(float(latest['turnover_ratio']), 2),
+            "slope": round(float(latest['regression_slope']), 6),
+            "volatility": round(float(latest['volatility']), 4),
             "signal": signal,
             "signal_time": str(signal_time) if signal_time else None
         }
@@ -146,7 +145,7 @@ for ticker in watchlist:
 print("=" * 50)
 print(f"📊 Scan complete. Found {len(signals_found)} signals.")
 
-# ── SAVE ALL SIGNALS TO TEXT FILE (for Telegram) ──
+# ── SAVE OUTPUT ──────────────────────────────────
 if signals_found:
     with open('signal_output.txt', 'w') as f:
         for s in signals_found:
@@ -156,7 +155,7 @@ if signals_found:
             f.write(f"Turnover: {s['turnover']}x\n")
             f.write(f"Volatility: {s['volatility']}\n")
             f.write(f"Time: {s['signal_time']}\n")
-            f.write("━━━━━━━━━━━━━━━━━━━━\n")   # separator between signals
+            f.write("━━━━━━━━━━━━━━━━━━━━\n")
     
     with open('signal_output.json', 'w') as f:
         json.dump(signals_found, f, indent=2)
