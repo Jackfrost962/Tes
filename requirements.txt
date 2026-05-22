@@ -1,6 +1,6 @@
 txt
 
-yfinance
+yfinance>=0.2.50
 pandas
 numpy
 scipy
