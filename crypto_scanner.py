@@ -8,6 +8,7 @@ from datetime import datetime
 # ── WATCHLIST (FIXED TICKERS) ────────────────────────
 watchlist = [
     "LDO-USD",
+    "PROVE-USD",
     "SUI20947-USD",
     "DOGE-USD",
     "RPL-USD",
@@ -15,7 +16,7 @@ watchlist = [
     "BTC-USD",
     "ETH-USD",
     "ONDO-USD",
-    "TRX-USD",
+    "UB38339-USD",
     "JTO-USD",
     "TAO22974-USD",
     "FIDA-USD",
