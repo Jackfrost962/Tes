@@ -71,6 +71,7 @@ def get_signal(ticker):
         df['avg_volatility'] = df['volatility'].rolling(168).mean()
         
         window = 168
+        btc['price_change']      = btc['Close'].pct_change().shift(1)
         df['local_high'] = df['High'].rolling(window).max()
         df['local_low'] = df['Low'].rolling(window).min()
         df['lower_high'] = df['local_high'] < df['local_high'].shift(window)
@@ -87,6 +88,7 @@ def get_signal(ticker):
             (df['hour'] >= 0) & (df['hour'] <= 15) &
             (df['regression_slope'] > 0) &
             (~df['bearish']) &
+            (btc['price_change']>0)&
             (df['volatility'] > df['avg_volatility'])
         )
         
