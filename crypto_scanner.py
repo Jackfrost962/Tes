@@ -45,6 +45,7 @@ def rolling_slope(series, window):
             x = np.arange(window)
             slope, _, _, _, _ = stats.linregress(x, y)
             slopes.append(slope)
+    # return with same index as input series
     return pd.Series(slopes, index=series.index)
 
 # ── GET SIGNAL ───────────────────────────────────────
