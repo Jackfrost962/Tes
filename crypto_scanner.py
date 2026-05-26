@@ -125,7 +125,7 @@
                 "signal_time": str(signal_time) if signal_time else None
             }
             
-        except Exception as e:
+            except Exception as e:
             print(f"  ❌ {ticker} error: {e}")
             return None
     
