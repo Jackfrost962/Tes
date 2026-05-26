@@ -11,7 +11,7 @@ watchlist = [
     "PROVE-USD",
     "SUI20947-USD",
     "DOGE-USD",
-    "RPL-USD",
+    "WLD-USD",
     "AAVE-USD",
     "BTC-USD",
     "ETH-USD",
@@ -104,7 +104,7 @@ def get_signal(ticker):
             (df['hour'].between(0, 15)) &
             (df['regression_slope'] > 0) &
             (~df['bearish']) &
-            (df['price_change'].abs() < max_prev_candle_move) &  # fixed
+            (df['price_change']>0) &  # fixed
             (df['volatility'] > df['avg_volatility'])
         )
 
