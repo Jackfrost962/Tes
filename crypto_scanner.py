@@ -22,7 +22,9 @@ watchlist = [
     "BNB-USD",
     "TAO22974-USD",
     "FIDA-USD",
-    "PENDLE-USD"
+    "PENDLE-USD",
+    "ME32917-USD",
+    "VVV35509-USD"
 ]
 
 # ── PARAMETERS ───────────────────────────────────────
