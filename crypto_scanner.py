@@ -19,7 +19,7 @@ watchlist = [
     "UB38339-USD",
     "JTO-USD",
     "NEAR-USD",
-    "PEPE-24478",
+    "PEPE24478-USD",
     "BNB-USD",
     "TAO22974-USD",
     "FIDA-USD",
@@ -35,36 +35,41 @@ max_prev_candle_move  = 0.05   # skip if prev candle already moved 5%+
 recent_candle_window  = 3      # check last N candles for signal
 
 # ── ROLLING SLOPE ────────────────────────────────────
+# ── REPLACE rolling_slope entirely — no scipy ────
 def rolling_slope(series, window):
-    slopes = []
-    for i in range(len(series)):
-        if i < window - 1:
-            slopes.append(np.nan)
-        else:
-            y = series.iloc[i - window:i].values
-            x = np.arange(window)
-            slope, _, _, _, _ = stats.linregress(x, y)
-            slopes.append(slope)
-    # return with same index as input series
+    values = np.array(series.values, dtype=np.float64)
+    slopes = np.full(len(values), np.nan)
+    x = np.arange(window, dtype=np.float64)
+    x_mean = x.mean()
+    x_var = ((x - x_mean) ** 2).sum()
+    
+    for i in range(window - 1, len(values)):
+        y = values[i - window + 1: i + 1]
+        y_mean = y.mean()
+        slope = ((x - x_mean) * (y - y_mean)).sum() / x_var
+        slopes[i] = slope
+        
     return pd.Series(slopes, index=series.index)
 
 # ── GET SIGNAL ───────────────────────────────────────
 def get_signal(ticker):
     try:
         df = yf.download(
-            ticker,
-            interval="1h",
-            period="60d",
-            progress=False
+        ticker,
+        interval="1h",
+        period="60d",
+        progress=False,
+        auto_adjust=False
         )
-
-        if len(df) < 200:
-            return None
 
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.droplevel(1)
 
         df = df.dropna()
+
+        # drop Adj Close — not needed
+        if 'Adj Close' in df.columns:
+            df = df.drop(columns=['Adj Close'])
 
         if len(df) < 336:
             return None
@@ -105,14 +110,14 @@ def get_signal(ticker):
             return None
 
         # ── CONDITIONS ───────────────────────────────
-        buy_condition = (
-            (df['turnover_ratio'] > turnover_threshold) &
-            (df['hour'].between(0, 15)) &
-            (df['regression_slope'] > 0) &
-            (~df['bearish']) &
-            (df['price_change']>0) &  # fixed
-            (df['volatility'] > df['avg_volatility'])
-        )
+
+        buy_condition = pd.Series(True, index=df.index)
+        buy_condition &= df['turnover_ratio'] > turnover_threshold
+        buy_condition &= df['hour'].between(0, 15)
+        buy_condition &= df['regression_slope'] > 0
+        buy_condition &= ~df['bearish']
+        buy_condition &= df['price_change'] > 0
+        buy_condition &= df['volatility'] > df['avg_volatility']
 
         exit_condition = (
             (df['turnover_ratio'] < force_exit_turnover) &
@@ -128,10 +133,10 @@ def get_signal(ticker):
         signal      = "STAND STILL"
         signal_time = None
 
-        if len(buy_signals) > 0 and buy_signals[-1] in recent_candles:
+        if len(buy_signals) > 0 and buy_signals[-1] in recent_candles.tolist():
             signal      = "BUY"
             signal_time = buy_signals[-1]
-        elif len(exit_signals) > 0 and exit_signals[-1] in recent_candles:
+        elif len(exit_signals) > 0 and exit_signals[-1] in recent_candles.tolist():
             signal      = "EXIT"
             signal_time = exit_signals[-1]
 
