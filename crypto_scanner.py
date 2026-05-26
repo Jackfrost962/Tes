@@ -18,6 +18,8 @@ watchlist = [
     "ONDO-USD",
     "UB38339-USD",
     "JTO-USD",
+    "PEPE-22478",
+    "BNB-USD",
     "TAO22974-USD",
     "FIDA-USD",
     "PENDLE-USD"
