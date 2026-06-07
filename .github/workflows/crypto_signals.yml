@@ -1,7 +1,7 @@
 name: Crypto Signal Scanner
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Triggered manually whenever you want to scan
 
 jobs:
   scan:
@@ -17,18 +17,22 @@ jobs:
           python-version: '3.11'
 
       - name: 📦 Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install tabulate
 
       - name: 🔍 Run crypto scanner
-        run: python crypto_scanner.py
+        run: python daily_radar.py
 
       - name: 📤 Read signal output
         id: signal
         run: |
-          if [ -f signal_output.txt ] && ! grep -q "NO_SIGNAL" signal_output.txt; then
+          if [ -f MARKET_REPORT.md ]; then
             echo "found=true" >> $GITHUB_OUTPUT
             echo "message<<EOF" >> $GITHUB_OUTPUT
-            tail -c 4000 signal_output.txt >> $GITHUB_OUTPUT
+            # Safely grab the raw report content for Telegram (max 4000 characters)
+            cat MARKET_REPORT.md | tail -c 4000 >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
@@ -40,18 +44,20 @@ jobs:
         with:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Wrapped the output in a markdown preformatted code block (```) 
+          # so the pandas table columns stay aligned on your phone screen!
           message: |
-            🚨 CRYPTO SIGNALS (LAST HOUR) 🚨
+            📊 **DAILY QUANT REGIME & LIQUIDITY MATRIX** 📊
             
+            ```
             ${{ steps.signal.outputs.message }}
+            ```
             
-            🔍 Check your trading platform now!
+            🌐 Open Coinglass now to cross-examine CVD order flow metrics!
 
-      - name: 💾 Upload results
+      - name: 💾 Upload results as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: crypto-signals
-          path: |
-            signal_output.txt
-            signal_output.json
+          path: MARKET_REPORT.md
           retention-days: 7
