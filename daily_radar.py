@@ -97,16 +97,21 @@ for yf_ticker in token_pool:
 # =======================================================================
 final_df = pd.DataFrame(dashboard_ledger)
 
-# Display to the local console / GitHub Actions terminal logs
-print("\n" + "="*95)
-print("                          DAILY QUANT REGIME & LIQUIDITY MATRIX               ")
-print("="*95)
+# A. Standard console print
 print(final_df.to_string(index=False))
-print("="*95)
 
-# Auto-write to your GitHub markdown home page documentation
+# B. Auto-write table to your GitHub markdown home page
 with open("MARKET_REPORT.md", "w", encoding="utf-8") as f:
     f.write("# 🤖 Daily Quantitative Market Regime & Liquidity Matrix\n\n")
     f.write(f"**Last Data Audit Verification (UTC):** {pd.Timestamp.utcnow().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-    f.write("> **Next-Step Playbook:** Identify tokens with high `VOL TURNOVER` and cross-examine them on Coinglass/Velo to check the live CVD order-flow delta context.\n\n")
     f.write(final_df.to_markdown(index=False))
+
+# C. 🔥 NEW: Format a clean vertical list for Telegram text compatibility
+with open("telegram_output.txt", "w", encoding="utf-8") as f:
+    for row in dashboard_ledger:
+        f.write(f"🔹 **{row['TOKEN']}**\n")
+        f.write(f" ├ 24H Price: {row['24H PRICE']}\n")
+        f.write(f" ├ Macro Trend: {row['MACRO REGIME']}\n")
+        f.write(f" ├ Momentum: {row['SHORT MOMENTUM']}\n")
+        f.write(f" ├ Vol Turnover: {row['VOL TURNOVER']}\n")
+        f.write(f" └ Volatility TO: {row['VOLATILITY TO']}\n\n")
