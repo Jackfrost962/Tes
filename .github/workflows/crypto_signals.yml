@@ -25,13 +25,13 @@ jobs:
       - name: 🔍 Run crypto scanner
         run: python daily_radar.py
 
-      - name: 📤 Read signal output
+      - name: 📤 Read Telegram string output
         id: signal
         run: |
-          if [ -f MARKET_REPORT.md ]; then
+          if [ -f telegram_output.txt ]; then
             echo "found=true" >> $GITHUB_OUTPUT
             echo "message<<EOF" >> $GITHUB_OUTPUT
-            cat MARKET_REPORT.md | tail -c 4000 >> $GITHUB_OUTPUT
+            cat telegram_output.txt | tail -c 4000 >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
@@ -45,4 +45,14 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           message: |
-            📊 **DAILY QUANT REGIME & LIQUIDITY MATRIX** 📊
+            📊 **DAILY QUANT REGIME & LIQUIDITY SCAN** 📊
+            
+            ${{ steps.signal.outputs.message }}
+            🌐 Cross-examine metrics on Coinglass for CVD flow!
+
+      - name: 💾 Upload results as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crypto-signals
+          path: MARKET_REPORT.md
+          retention-days: 7
