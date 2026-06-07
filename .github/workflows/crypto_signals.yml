@@ -1,7 +1,7 @@
 name: Crypto Signal Scanner
 
 on:
-  workflow_dispatch: # Triggered manually whenever you want to scan
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   scan:
@@ -31,8 +31,8 @@ jobs:
           if [ -f MARKET_REPORT.md ]; then
             echo "found=true" >> $GITHUB_OUTPUT
             echo "message<<EOF" >> $GITHUB_OUTPUT
-            # Safely grab the raw report content for Telegram (max 4000 characters)
             cat MARKET_REPORT.md | tail -c 4000 >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
@@ -44,20 +44,5 @@ jobs:
         with:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # Wrapped the output in a markdown preformatted code block (```) 
-          # so the pandas table columns stay aligned on your phone screen!
           message: |
             📊 **DAILY QUANT REGIME & LIQUIDITY MATRIX** 📊
-            
-            ```
-            ${{ steps.signal.outputs.message }}
-            ```
-            
-            🌐 Open Coinglass now to cross-examine CVD order flow metrics!
-
-      - name: 💾 Upload results as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: crypto-signals
-          path: MARKET_REPORT.md
-          retention-days: 7
